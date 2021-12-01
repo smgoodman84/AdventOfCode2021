@@ -36,6 +36,18 @@ namespace AdventOfCode2021.Day01
 
         public void ExecutePart2()
         {
+            var increaseCount = 0;
+            var depthArray = _depths.ToArray();
+
+            for (var i = 0; i < depthArray.Length - 3; i++)
+            {
+                if (depthArray[i] < depthArray[i+3])
+                {
+                    increaseCount += 1;
+                }
+            }
+
+            Console.WriteLine(increaseCount);
         }
     }
 }
