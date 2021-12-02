@@ -9,7 +9,8 @@ namespace AdventOfCode2021
         {
             var days = new List<IDay>
             {
-                new Day01.Day01()
+                new Day01.Day01(),
+                new Day02.Day02()
             };
 
             foreach(var day in days)
