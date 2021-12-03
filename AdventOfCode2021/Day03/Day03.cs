@@ -49,6 +49,52 @@ namespace AdventOfCode2021.Day03
 
         public void ExecutePart2()
         {
+            var currentOxygenRatingList = _numbers;
+
+            foreach (var index in Enumerable.Range(0, _numbers.First().Length))
+            {
+                var totalNumbers = currentOxygenRatingList.Count;
+                var totalOnes = currentOxygenRatingList.Sum(n => n.GetBit(index));
+                var totalZeros = totalNumbers - totalOnes;
+
+                var mostCommonBitValue = totalOnes >= totalZeros ? 1 : 0;
+                currentOxygenRatingList = currentOxygenRatingList
+                    .Where(n => n.GetBit(index) == mostCommonBitValue)
+                    .ToList();
+
+                if (currentOxygenRatingList.Count == 1)
+                {
+                    break;
+                }
+            }
+
+
+            var currentScrubberList = _numbers;
+
+            foreach (var index in Enumerable.Range(0, _numbers.First().Length))
+            {
+                var totalNumbers = currentScrubberList.Count;
+                var totalOnes = currentScrubberList.Sum(n => n.GetBit(index));
+                var totalZeros = totalNumbers - totalOnes;
+
+                var leastCommonBitValue = totalOnes >= totalZeros ? 0 : 1;
+                currentScrubberList = currentScrubberList
+                    .Where(n => n.GetBit(index) == leastCommonBitValue)
+                    .ToList();
+
+                if (currentScrubberList.Count == 1)
+                {
+                    break;
+                }
+            }
+
+
+            var oxygenRating = currentOxygenRatingList.Single();
+            var scrubberRating = currentScrubberList.Single();
+
+            var lifeSupportRating = oxygenRating.GetValue() * scrubberRating.GetValue();
+
+            Console.WriteLine(lifeSupportRating);
         }
 
         private class BinaryString
