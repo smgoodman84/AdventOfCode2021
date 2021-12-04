@@ -11,7 +11,8 @@ namespace AdventOfCode2021
             {
                 new Day01.Day01(),
                 new Day02.Day02(),
-                new Day03.Day03()
+                new Day03.Day03(),
+                new Day04.Day04()
             };
 
             foreach(var day in days)
