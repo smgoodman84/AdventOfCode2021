@@ -40,6 +40,19 @@ namespace AdventOfCode2021.Day05
 
         public void ExecutePart2()
         {
+            var allPoints = _lines
+                .SelectMany(l => l.GetPoints())
+                .ToList();
+
+            var counts = allPoints
+                .GroupBy(c => c.ToString())
+                .ToList();
+
+            var result = counts
+                .Where(g => g.Count() >= 2)
+                .Count();
+
+            Console.WriteLine(result);
         }
 
         private class Line
@@ -59,37 +72,35 @@ namespace AdventOfCode2021.Day05
 
             public IEnumerable<Coordinate> GetPoints()
             {
-                if (IsHorizontal)
+                var dX = 0;
+                if (Start.X > End.X)
                 {
-                    var startY = Start.Y;
-                    var endY = End.Y;
-
-                    if (Start.Y > End.Y)
-                    {
-                        startY = End.Y;
-                        endY = Start.Y;
-                    }
-
-                    for (var y = startY; y <= endY; y++)
-                    {
-                        yield return new Coordinate(Start.X, y);
-                    }
+                    dX = -1;
                 }
-                else if (IsVertical)
+                if (Start.X < End.X)
                 {
-                    var startX = Start.X;
-                    var endX = End.X;
+                    dX = 1;
+                }
 
-                    if (Start.X > End.X)
-                    {
-                        startX = End.X;
-                        endX = Start.X;
-                    }
+                var dY = 0;
+                if (Start.Y > End.Y)
+                {
+                    dY = -1;
+                }
+                if (Start.Y < End.Y)
+                {
+                    dY = 1;
+                }
 
-                    for (var x = startX; x <= endX; x++)
-                    {
-                        yield return new Coordinate(x, Start.Y);
-                    }
+                var currentX = Start.X;
+                var currentY = Start.Y;
+
+                yield return new Coordinate(currentX, currentY);
+                while (currentX != End.X || currentY != End.Y)
+                {
+                    currentX += dX;
+                    currentY += dY;
+                    yield return new Coordinate(currentX, currentY);
                 }
             }
 
