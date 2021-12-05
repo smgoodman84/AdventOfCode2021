@@ -3,8 +3,10 @@ namespace AdventOfCode2021
 {
     public interface IDay
     {
-        public int Day { get; }
-        public void ExecutePart1();
-        public void ExecutePart2();
+        int DayNumber { get; }
+        string Part1();
+        string Part2();
+        string ValidatedPart1 { get; }
+        string ValidatedPart2 { get; }
     }
 }

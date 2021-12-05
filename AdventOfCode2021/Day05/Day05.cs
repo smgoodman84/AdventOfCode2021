@@ -7,6 +7,10 @@ namespace AdventOfCode2021.Day05
 {
     public class Day05 : IDay
     {
+        public int DayNumber => 5;
+        public string ValidatedPart1 => "6267";
+        public string ValidatedPart2 => "20196";
+
         private List<Line> _lines;
         public Day05()
         {
@@ -15,9 +19,7 @@ namespace AdventOfCode2021.Day05
                 .ToList();
         }
 
-        public int Day => 5;
-
-        public void ExecutePart1()
+        public string Part1()
         {
             var lines = _lines
                 .Where(l => l.IsHorizontal || l.IsVertical)
@@ -35,10 +37,10 @@ namespace AdventOfCode2021.Day05
                 .Where(g => g.Count() >= 2)
                 .Count();
 
-            Console.WriteLine(result);
+            return result.ToString();
         }
 
-        public void ExecutePart2()
+        public string Part2()
         {
             var allPoints = _lines
                 .SelectMany(l => l.GetPoints())
@@ -52,7 +54,7 @@ namespace AdventOfCode2021.Day05
                 .Where(g => g.Count() >= 2)
                 .Count();
 
-            Console.WriteLine(result);
+            return result.ToString();
         }
 
         private class Line

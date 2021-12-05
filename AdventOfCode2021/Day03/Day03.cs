@@ -7,6 +7,10 @@ namespace AdventOfCode2021.Day03
 {
     public class Day03 : IDay
     {
+        public int DayNumber => 3;
+        public string ValidatedPart1 => "2035764";
+        public string ValidatedPart2 => "2817661";
+
         private List<BinaryString> _numbers;
         public Day03()
         {
@@ -15,9 +19,7 @@ namespace AdventOfCode2021.Day03
                 .ToList();
         }
 
-        public int Day => 3;
-
-        public void ExecutePart1()
+        public string Part1()
         {
             var totalNumbers = _numbers.Count;
             var threshold = totalNumbers / 2;
@@ -44,10 +46,10 @@ namespace AdventOfCode2021.Day03
 
             var powerConsumption = gamma.GetValue() * epsilon.GetValue();
 
-            Console.WriteLine(powerConsumption);
+            return powerConsumption.ToString();
         }
 
-        public void ExecutePart2()
+        public string Part2()
         {
             var currentOxygenRatingList = _numbers;
 
@@ -94,7 +96,7 @@ namespace AdventOfCode2021.Day03
 
             var lifeSupportRating = oxygenRating.GetValue() * scrubberRating.GetValue();
 
-            Console.WriteLine(lifeSupportRating);
+            return lifeSupportRating.ToString();
         }
 
         private class BinaryString

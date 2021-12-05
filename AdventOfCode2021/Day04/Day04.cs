@@ -7,6 +7,10 @@ namespace AdventOfCode2021.Day04
 {
     public class Day04 : IDay
     {
+        public int DayNumber => 4;
+        public string ValidatedPart1 => "72770";
+        public string ValidatedPart2 => "13912";
+
         private List<int> _numbers;
         private List<BingoBoard> _boards = new List<BingoBoard>();
 
@@ -28,9 +32,7 @@ namespace AdventOfCode2021.Day04
             }
         }
 
-        public int Day => 4;
-
-        public void ExecutePart1()
+        public string Part1()
         {
             foreach(var number in _numbers)
             {
@@ -39,14 +41,15 @@ namespace AdventOfCode2021.Day04
                     if (board.Call(number))
                     {
                         var result = board.GetSumOfUncalled() * number;
-                        Console.WriteLine(result);
-                        return;
+                        return result.ToString();
                     }
                 }
             }
+
+            return string.Empty;
         }
 
-        public void ExecutePart2()
+        public string Part2()
         {
             foreach (var board in _boards)
             {
@@ -76,11 +79,12 @@ namespace AdventOfCode2021.Day04
                     if (finalBoard.Won)
                     {
                         var result = finalBoard.GetSumOfUncalled() * number;
-                        Console.WriteLine(result);
-                        return;
+                        return result.ToString();
                     }
                 }
             }
+
+            return string.Empty;
         }
 
         private class BingoBoard

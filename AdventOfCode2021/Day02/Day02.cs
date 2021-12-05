@@ -7,6 +7,10 @@ namespace AdventOfCode2021.Day02
 {
     public class Day02 : IDay
     {
+        public int DayNumber => 2;
+        public string ValidatedPart1 => "1990000";
+        public string ValidatedPart2 => "1975421260";
+
         private List<Movement> _movements;
         public Day02()
         {
@@ -15,16 +19,14 @@ namespace AdventOfCode2021.Day02
                 .ToList();
         }
 
-        public int Day => 2;
-
-        public void ExecutePart1()
+        public string Part1()
         {
             var depth = _movements.Sum(m => m.DepthEffect);
             var distance = _movements.Sum(m => m.ForwardEffect);
-            Console.WriteLine(depth * distance);
+            return (depth * distance).ToString();
         }
 
-        public void ExecutePart2()
+        public string Part2()
         {
             var aim = 0.0;
             var distance = 0.0;
@@ -47,7 +49,7 @@ namespace AdventOfCode2021.Day02
                 }
             }
 
-            Console.WriteLine(depth * distance);
+            return (depth * distance).ToString();
         }
 
         private class Movement

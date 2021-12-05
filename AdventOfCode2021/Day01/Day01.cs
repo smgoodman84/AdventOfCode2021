@@ -7,7 +7,9 @@ namespace AdventOfCode2021.Day01
 {
     public class Day01 : IDay
     {
-        public int Day => 1;
+        public int DayNumber => 1;
+        public string ValidatedPart1 => "1215";
+        public string ValidatedPart2 => "1150";
 
         private List<int> _depths;
 
@@ -18,7 +20,7 @@ namespace AdventOfCode2021.Day01
                 .ToList();
         }
 
-        public void ExecutePart1()
+        public string Part1()
         {
             int increaseCount = 0;
             int? previousValue = null;
@@ -31,10 +33,10 @@ namespace AdventOfCode2021.Day01
                 previousValue = depth;
             }
 
-            Console.WriteLine(increaseCount);
+            return increaseCount.ToString();
         }
 
-        public void ExecutePart2()
+        public string Part2()
         {
             var increaseCount = 0;
             var depthArray = _depths.ToArray();
@@ -47,7 +49,7 @@ namespace AdventOfCode2021.Day01
                 }
             }
 
-            Console.WriteLine(increaseCount);
+            return increaseCount.ToString();
         }
     }
 }
