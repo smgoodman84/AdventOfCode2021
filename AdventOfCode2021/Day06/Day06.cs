@@ -22,18 +22,21 @@ namespace AdventOfCode2021.Day06
                 .ToList();
         }
 
-        public string Part1()
+        public string Part1() => RunForDays(80);
+        public string Part2() => RunForDays(256);
+
+        private string RunForDays(int days)
         {
             var lanternfishes = _lanternfishDaysToReproduction
                 .GroupBy(x => x)
                 .Select(g => new Lanternfish(g.Key, g.Count()))
                 .ToList();
 
-            foreach (var day in Enumerable.Range(0,80))
+            foreach (var day in Enumerable.Range(0, days))
             {
-                var newLanternfish = 0;
+                long newLanternfish = 0;
 
-                foreach(var lanternfish in lanternfishes)
+                foreach (var lanternfish in lanternfishes)
                 {
                     newLanternfish += lanternfish.AdvanceDays();
                 }
@@ -46,23 +49,18 @@ namespace AdventOfCode2021.Day06
             return total.ToString();
         }
 
-        public string Part2()
-        {
-            return "";
-        }
-
         private class Lanternfish
         {
-            public Lanternfish(int daysUntilReproduction, int quantity)
+            public Lanternfish(int daysUntilReproduction, long quantity)
             {
                 DaysUntilReproduction = daysUntilReproduction;
                 Quantity = quantity;
             }
 
             public int DaysUntilReproduction { get; private set; }
-            public int Quantity { get; private set; }
+            public long Quantity { get; private set; }
 
-            public int AdvanceDays()
+            public long AdvanceDays()
             {
                 DaysUntilReproduction -= 1;
 
