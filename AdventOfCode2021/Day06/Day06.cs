@@ -9,7 +9,7 @@ namespace AdventOfCode2021.Day06
     {
         public int DayNumber => 6;
         public string ValidatedPart1 => "345387";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart2 => "1574445493136";
 
         private List<int> _lanternfishDaysToReproduction;
 
