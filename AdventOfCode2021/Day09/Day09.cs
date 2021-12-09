@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -9,7 +8,7 @@ namespace AdventOfCode2021.Day09
     {
         public int DayNumber => 9;
         public string ValidatedPart1 => "448";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart2 => "1417248";
 
         private Cave _cave;
 
@@ -25,13 +24,20 @@ namespace AdventOfCode2021.Day09
         public string Part1()
         {
             var lowPoints = _cave.FindLowPoints().ToList();
-            var totalRiskLevel = lowPoints.Sum(lp => lp + 1);
+            var totalRiskLevel = lowPoints.Sum(lp => lp.Height + 1);
             return totalRiskLevel.ToString();
         }
 
         public string Part2()
         {
-            return "";
+            var basins = _cave.FindBasins().ToList();
+            var largestBasins = basins.OrderByDescending(b => b.Size).Take(3);
+            var result = 1;
+            foreach (var basin in largestBasins)
+            {
+                result *= basin.Size;
+            }
+            return result.ToString();
         }
 
         private class Cave
@@ -43,7 +49,7 @@ namespace AdventOfCode2021.Day09
                 _heights = heights;
             }
 
-            public IEnumerable<int> FindLowPoints()
+            public IEnumerable<LowPoint> FindLowPoints()
             {
                 foreach(var y in Enumerable.Range(0, _heights.Length))
                 {
@@ -59,10 +65,112 @@ namespace AdventOfCode2021.Day09
                             || up <= thisHeight
                             || down <= thisHeight))
                         {
-                            yield return thisHeight;
+                            yield return new LowPoint(x, y, thisHeight);
                         }
                     }
                 }
+            }
+
+            public IEnumerable<Basin> FindBasins()
+            {
+                var lowPoints = FindLowPoints().ToList();
+                var basins = lowPoints.Select(lp => new Basin(_heights, lp)).ToList();
+                return basins;
+            }
+        }
+
+        private class LowPoint
+        {
+            public LowPoint(int x, int y, int height)
+            {
+                X = x;
+                Y = y;
+                Height = height;
+            }
+
+            public int X { get; }
+            public int Y { get; }
+            public int Height { get; }
+        }
+
+        private class Basin
+        {
+            public int Size { get; }
+            private readonly int[][] _heights;
+            private readonly LowPoint _lowPoint;
+            private bool[][] _visited;
+
+            public Basin(int[][] heights, LowPoint lowPoint)
+            {
+                _heights = heights;
+                _lowPoint = lowPoint;
+                _visited = _heights.Select(row => row.Select(x => false).ToArray()).ToArray();
+                Size = CalculateSize();
+            }
+
+            private int CalculateSize()
+            {
+                _visited[_lowPoint.Y][_lowPoint.X] = true;
+                return 1 + CheckFrom(_lowPoint.X, _lowPoint.Y);
+            }
+
+            private int CheckFrom(int x, int y)
+            {
+                var total = 0;
+                if (x - 1 >= 0)
+                {
+                    var left = x - 1;
+                    if (!_visited[y][left])
+                    {
+                        _visited[y][left] = true;
+                        if (_heights[y][left] < 9)
+                        {
+                            total += 1 + CheckFrom(left, y);
+                        }
+                    }
+                }
+
+                if (x + 1 < _visited[y].Length)
+                {
+                    var right = x + 1;
+                    if (!_visited[y][right])
+                    {
+                        _visited[y][right] = true;
+                        if (_heights[y][right] < 9)
+                        {
+                            total += 1 + CheckFrom(right, y);
+                        }
+                    }
+                }
+
+
+                if (y - 1 >= 0)
+                {
+                    var up = y - 1;
+                    if (!_visited[up][x])
+                    {
+                        _visited[up][x] = true;
+                        if (_heights[up][x] < 9)
+                        {
+                            total += 1 + CheckFrom(x, up);
+                        }
+                    }
+                }
+
+                if (y + 1 < _visited.Length)
+                {
+                    var down = y + 1;
+                    if (!_visited[down][x])
+                    {
+                        _visited[down][x] = true;
+                        if (_heights[down][x] < 9)
+                        {
+                            total += 1 + CheckFrom(x, down);
+                        }
+                    }
+                }
+
+                return total;
             }
         }
     }
