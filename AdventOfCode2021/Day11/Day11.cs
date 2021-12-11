@@ -8,11 +8,11 @@ namespace AdventOfCode2021.Day11
     {
         public int DayNumber => 11;
         public string ValidatedPart1 => "1723";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart2 => "327";
 
         private Octopus[][] _octopuses;
 
-        public Day11()
+        private void LoadData()
         {
             _octopuses = File.ReadAllLines("Day11/input.txt")
                 .Select(l => l.Select(o => new Octopus(int.Parse(o.ToString()))).ToArray())
@@ -21,6 +21,8 @@ namespace AdventOfCode2021.Day11
         
         public string Part1()
         {
+            LoadData();
+
             var flashes = 0;
             foreach(var step in Enumerable.Range(1, 100))
             {
@@ -64,7 +66,27 @@ namespace AdventOfCode2021.Day11
 
         public string Part2()
         {
-            return "";
+            LoadData();
+
+            var totalOctopuses = _octopuses.Sum(row => row.Length);
+
+            foreach (var step in Enumerable.Range(1, 10000))
+            {
+                var flashesThisStep = 0;
+                foreach (var y in Enumerable.Range(0, _octopuses.Length))
+                {
+                    foreach (var x in Enumerable.Range(0, _octopuses[y].Length))
+                    {
+                        flashesThisStep += IncreaseEnergyLevel(x, y, step);
+                    }
+                }
+                if (flashesThisStep == totalOctopuses)
+                {
+                    return step.ToString();
+                }
+            }
+
+            return "NO SYNCHRONISATION";
         }
 
         private class Octopus
