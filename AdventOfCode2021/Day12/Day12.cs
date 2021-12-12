@@ -8,8 +8,8 @@ namespace AdventOfCode2021.Day12
     public class Day12 : IDay
     {
         public int DayNumber => 12;
-        public string ValidatedPart1 => "";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart1 => "4659";
+        public string ValidatedPart2 => "148962";
 
         private List<Edge> _edges;
 
@@ -19,12 +19,16 @@ namespace AdventOfCode2021.Day12
                 .Select(l => new Edge(l))
                 .ToList();
         }
-        
-        public string Part1()
+
+        public string Part1() => GetPathCount(false);
+        public string Part2() => GetPathCount(true);
+
+        private string GetPathCount(bool canVisitOneSmallTwice)
         {
             var allCaveNames = _edges.Select(e => e.Start)
                 .Union(_edges.Select(e => e.End))
-                .Distinct();
+                .Distinct()
+                .ToList();
 
             var caves = allCaveNames
                 .Select(n => new Cave(n))
@@ -36,61 +40,76 @@ namespace AdventOfCode2021.Day12
                 caves[edge.End].AddNeighbour(caves[edge.Start]);
             }
 
-            var startPath = new Path(caves["start"]);
-            var inCompletePaths = startPath.FindPaths();
+            var startPath = new Path(caves["start"], allCaveNames);
+            var inCompletePaths = startPath.FindPaths(canVisitOneSmallTwice);
             var completePaths = new List<Path>();
 
             while (inCompletePaths.Any())
             {
-                var newPaths = inCompletePaths.SelectMany(p => p.FindPaths()).ToList();
+                var newPaths = inCompletePaths.SelectMany(p => p.FindPaths(canVisitOneSmallTwice)).ToList();
                 completePaths.AddRange(newPaths.Where(p => p.IsComplete));
                 inCompletePaths = newPaths.Where(p => !p.IsComplete).ToList();
             }
 
-            return completePaths.Count.ToString();
-        }
+            var paths = completePaths
+                .Select(p => p.ToString())
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
 
-        public string Part2()
-        {
-            return "";
+            return paths.Count.ToString();
         }
 
         private class Path
         {
             public List<Cave> Caves { get; private set; }
-            public HashSet<string> Visited { get; private set; }
+            public Dictionary<string, int> Visited { get; private set; }
             public Cave Current { get; private set; }
             public bool IsComplete => Current.Name == "end";
+            private bool HasVisitedSmallTwice = false;
 
-            public Path(Cave cave)
+            public Path(Cave cave, List<string> allCaveNames)
             {
                 Caves = new List<Cave>
                 {
                     cave
                 };
-                Visited = new HashSet<string>();
-                Visited.Add(cave.Name);
+                Visited = allCaveNames.ToDictionary(c => c, c => 0);
                 Current = cave;
             }
 
-            public Path(Path path, Cave cave)
+            public Path(Path path, Cave cave, bool hasVisitedSmallTwice)
             {
                 Caves = path.Caves.ToList();
                 Caves.Add(cave);
-                Visited = new HashSet<string>(path.Visited);
-                Visited.Add(cave.Name);
+                Visited = path.Visited.ToDictionary(v => v.Key, v => v.Value);
+                Visited[cave.Name] += 1;
                 Current = cave;
+                HasVisitedSmallTwice = hasVisitedSmallTwice;
             }
 
-            public IEnumerable<Path> FindPaths()
+            public IEnumerable<Path> FindPaths(bool canVisitOneSmallTwice)
             {
                 if (!IsComplete)
                 {
                     foreach (var neighbour in Current.Neighbours)
                     {
-                        if (neighbour.IsBig || (neighbour.IsSmall && !Visited.Contains(neighbour.Name)))
+                        if (neighbour.Name != "start")
                         {
-                            yield return new Path(this, neighbour);
+                            if (neighbour.IsBig)
+                            {
+                                yield return new Path(this, neighbour, HasVisitedSmallTwice);
+                            }
+
+                            if (neighbour.IsSmall && Visited[neighbour.Name] < 1)
+                            {
+                                yield return new Path(this, neighbour, HasVisitedSmallTwice);
+                            }
+
+                            if (canVisitOneSmallTwice && !HasVisitedSmallTwice && neighbour.IsSmall && Visited[neighbour.Name] < 2)
+                            {
+                                yield return new Path(this, neighbour, true);
+                            }
                         }
                     }
                 }

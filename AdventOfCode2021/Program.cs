@@ -27,21 +27,17 @@ namespace AdventOfCode2021
             foreach (var day in days)
             {
                 var part1 = day.Part1();
-                var part2 = day.Part2();
-
                 var part1Invalid = !string.IsNullOrWhiteSpace(day.ValidatedPart1)
                     && part1 != day.ValidatedPart1;
+                invalidCount += part1Invalid ? 1 : 0;
+                var part1InvalidString = part1Invalid ? " INVALID" : "";
+                Console.WriteLine($"Day {day.DayNumber} Part 1: {part1}{part1InvalidString}");
 
+                var part2 = day.Part2();
                 var part2Invalid = !string.IsNullOrWhiteSpace(day.ValidatedPart2)
                     && part2 != day.ValidatedPart2;
-
-                invalidCount += part1Invalid ? 1 : 0;
                 invalidCount += part2Invalid ? 1 : 0;
-
-                var part1InvalidString = part1Invalid ? " INVALID" : "";
                 var part2InvalidString = part2Invalid ? " INVALID" : "";
-
-                Console.WriteLine($"Day {day.DayNumber} Part 1: {part1}{part1InvalidString}");
                 Console.WriteLine($"Day {day.DayNumber} Part 2: {part2}{part2InvalidString}");
             }
 
