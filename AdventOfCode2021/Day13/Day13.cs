@@ -9,12 +9,19 @@ namespace AdventOfCode2021.Day13
     {
         public int DayNumber => 13;
         public string ValidatedPart1 => "737";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart2 => @"
+#### #  #   ## #  #  ##  #### #  # ### 
+   # #  #    # #  # #  # #    #  # #  #
+  #  #  #    # #  # #  # ###  #### #  #
+ #   #  #    # #  # #### #    #  # ### 
+#    #  # #  # #  # #  # #    #  # #   
+####  ##   ##   ##  #  # #    #  # #   
+";
 
         private List<Coordinate> _coordinates;
         private List<Fold> _folds;
 
-        public Day13()
+        private void LoadData()
         {
             var lines = File.ReadAllLines("Day13/input.txt")
                 .ToList();
@@ -30,6 +37,8 @@ namespace AdventOfCode2021.Day13
 
         public string Part1()
         {
+            LoadData();
+
             var firstFold = _folds.First();
 
             foreach(var coordinate in _coordinates)
@@ -44,7 +53,33 @@ namespace AdventOfCode2021.Day13
 
         public string Part2()
         {
-            return "";
+            LoadData();
+
+            foreach (var fold in _folds)
+            {
+                foreach (var coordinate in _coordinates)
+                {
+                    coordinate.ApplyFold(fold);
+                }
+            }
+
+            var maxX = _coordinates.Max(c => c.X);
+            var maxY = _coordinates.Max(c => c.Y);
+            var result = Environment.NewLine;
+            for (var y =0; y <= maxY; y++)
+            {
+                for (var x = 0; x <= maxX; x++)
+                {
+                    var isDot = _coordinates.Any(c => c.X == x && c.Y == y);
+                    var c = isDot ? '#' : ' ';
+                    result = $"{result}{c}";
+                }
+
+                result = $"{result}{Environment.NewLine}";
+            }
+
+
+            return result;
         }
 
         private class Coordinate
