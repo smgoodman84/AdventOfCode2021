@@ -21,6 +21,7 @@ namespace AdventOfCode2021
                 new Day10.Day10(),
                 new Day11.Day11(),
                 new Day12.Day12(),
+                new Day13.Day13(),
             };
 
             var invalidCount = 0;
@@ -42,6 +43,19 @@ namespace AdventOfCode2021
             }
 
             Console.WriteLine($"{invalidCount} INVALID Results");
+        }
+
+        private bool ExecuteDay(int day, int part, Func<string> func, string validatedResult)
+        {
+            var result = func();
+
+            var invalid = !string.IsNullOrWhiteSpace(validatedResult)
+                && result != validatedResult;
+
+            var invalidString = invalid ? " INVALID" : "";
+            Console.WriteLine($"Day {day} Part {part}: {result}{invalidString}");
+
+            return invalid;
         }
     }
 }
