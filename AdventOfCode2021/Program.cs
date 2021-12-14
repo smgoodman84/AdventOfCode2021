@@ -22,6 +22,7 @@ namespace AdventOfCode2021
                 new Day11.Day11(),
                 new Day12.Day12(),
                 new Day13.Day13(),
+                new Day14.Day14(),
             };
 
             var invalidCount = 0;
