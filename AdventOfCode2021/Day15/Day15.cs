@@ -76,7 +76,7 @@ namespace AdventOfCode2021.Day15
             var start = nodes[new Coordinate(startX, startY).ToString()];
             var end = nodes[new Coordinate(endX, endY).ToString()];
 
-            var result = shortestPaths.GetShortestPath(start, end);
+            var result = shortestPaths.GetShortestPath(start, end, 5000);
 
             return result.ToString();
         }
@@ -91,6 +91,53 @@ namespace AdventOfCode2021.Day15
             return risk;
         }
 
+
+        private class SimplePriorityQueue
+        {
+            private List<string>[] _items;
+            private Dictionary<string, int> _itemValues = new Dictionary<string, int>();
+
+            public SimplePriorityQueue(int maxPriority)
+            {
+                _items = Enumerable.Range(0, maxPriority + 1)
+                    .Select(x => new List<string>())
+                    .ToArray();
+            }
+
+            public void SetPriority(string key, int value)
+            {
+                if (_itemValues.ContainsKey(key))
+                {
+                    Remove(key);
+                }
+
+                _itemValues.Add(key, value);
+                _items[value].Add(key);
+            }
+
+            public void Remove(string key)
+            {
+                var value = _itemValues[key];
+                _itemValues.Remove(key);
+                _items[value].Remove(key);
+            }
+
+            public string Pop()
+            {
+                foreach(var itemList in _items)
+                {
+                    if (itemList.Any())
+                    {
+                        var result = itemList.First();
+                        Remove(result);
+                        return result;
+                    }
+                }
+
+                return null;
+            }
+        }
+
         private class ShortestPaths
         {
             public ShortestPaths(List<Node> nodes)
@@ -98,25 +145,28 @@ namespace AdventOfCode2021.Day15
                 _allNodes = nodes.ToDictionary(n => n.Identifier, n => n);
             }
 
-            public int GetShortestPath(Node start, Node end)
+            public int GetShortestPath(Node start, Node end, int maxDistance)
             {
+                var queue = new SimplePriorityQueue(maxDistance);
+                foreach (var node in _allNodes)
+                {
+                    queue.SetPriority(node.Key, maxDistance);
+                }
+
                 _incompleteNodes = _allNodes.ToDictionary(n => n.Key, n => n.Value);
                 _previousNodes = _allNodes.ToDictionary(n => n.Key, n => (Node)null);
-                _distances = _allNodes.ToDictionary(n => n.Key, n => 100000000);
+                _distances = _allNodes.ToDictionary(n => n.Key, n => maxDistance);
 
                 _distances[start.Identifier] = 0;
+                queue.SetPriority(start.Identifier, 0);
 
                 while (_incompleteNodes.Any())
                 {
-                    var minimumIncompleteKey = _distances
-                        .Where(d => _incompleteNodes.ContainsKey(d.Key))
-                        .OrderBy(d => d.Value)
-                        .First()
-                        .Key;
-
-                    var minimumIncomplete = _allNodes[minimumIncompleteKey];
+                    var minimumIncompleteKey = queue.Pop();
                     _incompleteNodes.Remove(minimumIncompleteKey);
 
+                    var minimumIncomplete = _allNodes[minimumIncompleteKey];
+                    
                     foreach (var neighbour in minimumIncomplete.Neighbours)
                     {
                         if (_incompleteNodes.ContainsKey(neighbour.Identifier))
@@ -124,6 +174,7 @@ namespace AdventOfCode2021.Day15
                             var alt = _distances[minimumIncompleteKey] + neighbour.Distance;
                             if (alt < _distances[neighbour.Identifier])
                             {
+                                queue.SetPriority(neighbour.Identifier, alt);
                                 _distances[neighbour.Identifier] = alt;
                                 _previousNodes[neighbour.Identifier] = minimumIncomplete;
                             }
