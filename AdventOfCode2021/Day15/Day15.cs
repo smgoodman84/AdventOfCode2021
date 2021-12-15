@@ -8,57 +8,12 @@ namespace AdventOfCode2021.Day15
     {
         public int DayNumber => 15;
         public string ValidatedPart1 => "361";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart2 => "2838";
 
-        public string Part1()
-        {
-            var nodes = File.ReadAllLines("Day15/input.txt")
-                .SelectMany((l, y) => l.Select((d, x) => new Node(x, y, int.Parse(d.ToString()))).ToArray())
-                .ToDictionary(n => n.Identifier, n => n);
+        public string Part1() => FindShortestPath(1, 1);
+        public string Part2() => FindShortestPath(5, 5);
 
-            foreach (var node in nodes.Values)
-            {
-                var coordinate = node.Coordinate;
-                var leftKey = new Coordinate(coordinate.X - 1, coordinate.Y).ToString();
-                var rightKey = new Coordinate(coordinate.X + 1, coordinate.Y).ToString();
-                var upKey = new Coordinate(coordinate.X, coordinate.Y - 1).ToString();
-                var downKey = new Coordinate(coordinate.X, coordinate.Y + 1).ToString();
-
-                if (nodes.ContainsKey(leftKey))
-                {
-                    node.Neighbours.Add(nodes[leftKey]);
-                }
-                if (nodes.ContainsKey(rightKey))
-                {
-                    node.Neighbours.Add(nodes[rightKey]);
-                }
-                if (nodes.ContainsKey(upKey))
-                {
-                    node.Neighbours.Add(nodes[upKey]);
-                }
-                if (nodes.ContainsKey(downKey))
-                {
-                    node.Neighbours.Add(nodes[downKey]);
-                }
-            }
-
-            var shortestPaths = new ShortestPaths(nodes.Values.ToList());
-
-            var startX = nodes.Values.Min(n => n.Coordinate.X);
-            var startY = nodes.Values.Min(n => n.Coordinate.X);
-            var endX = nodes.Values.Max(n => n.Coordinate.X);
-            var endY = nodes.Values.Max(n => n.Coordinate.X);
-
-            var start = nodes[new Coordinate(startX, startY).ToString()];
-            var end = nodes[new Coordinate(endX, endY).ToString()];
-
-            var result = shortestPaths.GetShortestPath(start, end);
-
-            return result.ToString();
-        }
-        
-
-        public string Part2()
+        public string FindShortestPath(int tileWidth, int tileHeight)
         {
             var fileNodes = File.ReadAllLines("Day15/input.txt")
                 .SelectMany((l, y) => l.Select((d, x) => new Node(x, y, int.Parse(d.ToString()))).ToArray())
@@ -69,9 +24,9 @@ namespace AdventOfCode2021.Day15
 
             var nodes = new Dictionary<string, Node>();
 
-            for(var tileX = 0; tileX < 5; tileX++)
+            for(var tileX = 0; tileX < tileWidth; tileX++)
             {
-                for (var tileY = 0; tileY < 5; tileY++)
+                for (var tileY = 0; tileY < tileHeight; tileY++)
                 {
                     foreach (var node in fileNodes.Values)
                     {
@@ -174,8 +129,6 @@ namespace AdventOfCode2021.Day15
                             }
                         }
                     }
-
-                    System.Console.WriteLine($"Completed {minimumIncompleteKey} : {_distances[minimumIncompleteKey]}");
                 }
 
                 return _distances[end.Identifier];
