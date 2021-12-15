@@ -56,10 +56,84 @@ namespace AdventOfCode2021.Day15
 
             return result.ToString();
         }
+        
 
         public string Part2()
         {
-            return "";
+            var fileNodes = File.ReadAllLines("Day15/input.txt")
+                .SelectMany((l, y) => l.Select((d, x) => new Node(x, y, int.Parse(d.ToString()))).ToArray())
+                .ToDictionary(n => n.Identifier, n => n);
+
+            var fileNodeWidth = fileNodes.Values.Max(n => n.Coordinate.X) + 1;
+            var fileNodeHeight = fileNodes.Values.Max(n => n.Coordinate.Y) + 1;
+
+            var nodes = new Dictionary<string, Node>();
+
+            for(var tileX = 0; tileX < 5; tileX++)
+            {
+                for (var tileY = 0; tileY < 5; tileY++)
+                {
+                    foreach (var node in fileNodes.Values)
+                    {
+                        var distance = WrapRisk(node.Distance + tileX + tileY);
+                        var x = tileX * fileNodeWidth + node.Coordinate.X;
+                        var y = tileY * fileNodeHeight + node.Coordinate.Y;
+
+                        var newNode = new Node(x, y, distance);
+                        nodes.Add(newNode.Identifier, newNode);
+                    }
+                }
+            }
+
+            foreach (var node in nodes.Values)
+            {
+                var coordinate = node.Coordinate;
+                var leftKey = new Coordinate(coordinate.X - 1, coordinate.Y).ToString();
+                var rightKey = new Coordinate(coordinate.X + 1, coordinate.Y).ToString();
+                var upKey = new Coordinate(coordinate.X, coordinate.Y - 1).ToString();
+                var downKey = new Coordinate(coordinate.X, coordinate.Y + 1).ToString();
+
+                if (nodes.ContainsKey(leftKey))
+                {
+                    node.Neighbours.Add(nodes[leftKey]);
+                }
+                if (nodes.ContainsKey(rightKey))
+                {
+                    node.Neighbours.Add(nodes[rightKey]);
+                }
+                if (nodes.ContainsKey(upKey))
+                {
+                    node.Neighbours.Add(nodes[upKey]);
+                }
+                if (nodes.ContainsKey(downKey))
+                {
+                    node.Neighbours.Add(nodes[downKey]);
+                }
+            }
+
+            var shortestPaths = new ShortestPaths(nodes.Values.ToList());
+
+            var startX = nodes.Values.Min(n => n.Coordinate.X);
+            var startY = nodes.Values.Min(n => n.Coordinate.Y);
+            var endX = nodes.Values.Max(n => n.Coordinate.X);
+            var endY = nodes.Values.Max(n => n.Coordinate.Y);
+
+            var start = nodes[new Coordinate(startX, startY).ToString()];
+            var end = nodes[new Coordinate(endX, endY).ToString()];
+
+            var result = shortestPaths.GetShortestPath(start, end);
+
+            return result.ToString();
+        }
+
+        private int WrapRisk(int risk)
+        {
+            if (risk > 9)
+            {
+                return risk - 9;
+            }
+
+            return risk;
         }
 
         private class ShortestPaths
@@ -100,6 +174,8 @@ namespace AdventOfCode2021.Day15
                             }
                         }
                     }
+
+                    System.Console.WriteLine($"Completed {minimumIncompleteKey} : {_distances[minimumIncompleteKey]}");
                 }
 
                 return _distances[end.Identifier];
