@@ -20,7 +20,6 @@ namespace AdventOfCode2021.Day16
 
         private enum SymbolType
         {
-            Parent,
             HeaderVersion,
             HeaderType,
             Literal,
@@ -74,248 +73,174 @@ namespace AdventOfCode2021.Day16
 
         private class Packet
         {
+            public Symbol HeaderVersion { get; set; }
+            public Symbol HeaderType { get; set; }
+            public Symbol Literal { get; set; }
+            public Symbol OperatorLengthType { get; set; }
+            public Symbol TotalPacketLength { get; set; }
+            public Symbol SubPacketCount { get; set; }
+            /*
             public Packet Parent { get; set; }
             public LengthType LengthType { get; set; }
             public int End { get; set; }
             public List<Symbol> Symbols { get; set; } = new List<Symbol>();
+            */
             public List<Packet> Packets { get; set; } = new List<Packet>();
+        }
+
+        private class Parser
+        {
+            private readonly int[] _binaryData;
+
+            public Parser(int[] binaryData)
+            {
+                _binaryData = binaryData;
+            }
+
+            private int _index = 0;
+            
+            private int[] ReadSymbolData(int bitsToRead)
+            {
+                var symbolData = new int[bitsToRead];
+
+                var symbolIndex = 0;
+                while (symbolIndex < bitsToRead)
+                {
+                    symbolData[symbolIndex] = _binaryData[_index];
+                    symbolIndex += 1;
+                    _index += 1;
+                }
+
+                return symbolData;
+            }
+
+            private Symbol ReadHeaderVersion()
+            {
+                var symbolData = ReadSymbolData(3);
+                var headerVersion = new Symbol(SymbolType.HeaderVersion, symbolData);
+                return headerVersion;
+            }
+
+            private Symbol ReadHeaderType()
+            {
+                var symbolData = ReadSymbolData(3);
+                var headerType = new Symbol(SymbolType.HeaderType, symbolData);
+                return headerType;
+            }
+
+            private Symbol ReadLiteral()
+            {
+                var literal = new Symbol(SymbolType.Literal, new int[0]);
+
+                var readMore = true;
+                while(readMore)
+                {
+                    var currentLiteralPart = ReadSymbolData(5);
+                    literal.AddBits(currentLiteralPart.Skip(1));
+
+                    readMore = currentLiteralPart[0] == 1;
+                }
+
+                return literal;
+            }
+
+            private Symbol ReadOperatorTypeLength()
+            {
+                var symbolData = ReadSymbolData(1);
+                var operatorLengthType = new Symbol(SymbolType.OperatorLengthType, symbolData);
+                return operatorLengthType;
+            }
+
+            private Symbol ReadTotalPacketLength()
+            {
+                var symbolData = ReadSymbolData(15);
+                var totalPacketLength = new Symbol(SymbolType.TotalPacketLength, symbolData);
+                return totalPacketLength;
+            }
+
+            private Symbol ReadSubPacketCount()
+            {
+                var symbolData = ReadSymbolData(11);
+                var subPacketCount = new Symbol(SymbolType.SubPacketCount, symbolData);
+                return subPacketCount;
+            }
+
+            private List<Packet> ReadPacketsForCount(int count)
+            {
+                var packets = new List<Packet>();
+
+                while (count > 0)
+                {
+                    packets.Add(ReadPacket());
+                    count -= 1;
+                }
+
+                return packets;
+            }
+
+            private List<Packet> ReadPacketsForLength(int count)
+            {
+                var endIndex = _index + count;
+                var packets = new List<Packet>();
+
+                while (_index < endIndex)
+                {
+                    packets.Add(ReadPacket());
+                }
+
+                return packets;
+            }
+
+            private Packet ReadPacket()
+            {
+                var packet = new Packet();
+
+                packet.HeaderVersion = ReadHeaderVersion();
+                packet.HeaderType = ReadHeaderType();
+
+                if (packet.HeaderType.IntValue == 4)
+                {
+
+                    packet.Literal = ReadLiteral();
+                    return packet;
+                }
+
+                packet.OperatorLengthType = ReadOperatorTypeLength();
+                if (packet.OperatorLengthType.IntValue == 0)
+                {
+                    packet.TotalPacketLength = ReadTotalPacketLength();
+                    packet.Packets = ReadPacketsForLength(packet.TotalPacketLength.IntValue);
+                    return packet;
+                }
+
+                packet.SubPacketCount = ReadSubPacketCount();
+                packet.Packets = ReadPacketsForCount(packet.SubPacketCount.IntValue);
+                return packet;
+            }
+
+            public Packet Parse()
+            {
+                var packet = ReadPacket();
+                return packet;
+            }
         }
 
         public string Part1()
         {
             var binaryData = ExpandHex(_hexTransmission).ToArray();
 
-            var packetStack = new Stack<Packet>();
-            Packet packet = new Packet()
-            {
-                LengthType = LengthType.Packets,
-                End = 1
-            };
-            var headPacket = packet;
+            var parser = new Parser(binaryData);
 
-            var currentLiteral = new Symbol(SymbolType.Literal, new int[0]);
+            var packet = parser.Parse();
 
-            var symbolType = SymbolType.HeaderVersion;
-            var bitsToRead = 3;
-
-            var index = 0;
-            while(bitsToRead > 0)
-            {
-                var symbol = new int[bitsToRead];
-                var symbolIndex = 0;
-                while (symbolIndex < bitsToRead)
-                {
-                    symbol[symbolIndex] = binaryData[index];
-                    symbolIndex += 1;
-                    index += 1;
-                }
-
-                /*
-                if (packet.LengthType == LengthType.Bits && index == packet.End)
-                {
-                    symbolType = SymbolType.HeaderVersion;
-                    var isFinished = true;
-                    while (isFinished && packetStack.Any())
-                    {
-                        packet = packetStack.Pop();
-                        if (packet.LengthType == LengthType.Bits && index < packet.End)
-                        {
-                            isFinished = false;
-                        }
-                        if (packet.LengthType == LengthType.Packets
-                            && packet.Parent != null
-                            && packet.Parent.Packets.Count < packet.End)
-                        {
-                            isFinished = false;
-                        }
-                    }
-
-                    bitsToRead = isFinished ? 0 : 3;
-                }
-                */
-                switch (symbolType)
-                {
-                    case SymbolType.HeaderVersion:
-                        packet.Symbols.Add(new Symbol(SymbolType.HeaderVersion, symbol));
-
-                        symbolType = SymbolType.HeaderType;
-                        bitsToRead = 3;
-                        break;
-
-                    case SymbolType.HeaderType:
-                        var headerTypeSymbol = new Symbol(SymbolType.HeaderType, symbol);
-                        packet.Symbols.Add(headerTypeSymbol);
-
-                        var packetType = headerTypeSymbol.IntValue;
-                        switch (packetType)
-                        {
-                            case 4:
-                                symbolType = SymbolType.Literal;
-                                bitsToRead = 5;
-                                break;
-                            default:
-                                symbolType = SymbolType.OperatorLengthType;
-                                bitsToRead = 1;
-                                break;
-
-                        }
-                        break;
-
-                    case SymbolType.Literal:
-                        currentLiteral.AddBits(symbol.Skip(1).ToArray());
-                        if (symbol[0] == 0)
-                        {
-                            packet.Symbols.Add(currentLiteral);
-                            currentLiteral = new Symbol(SymbolType.Literal, new int[0]);
-
-                            symbolType = SymbolType.HeaderVersion;
-
-                            if (packet.LengthType == LengthType.Bits)
-                            {
-                                if (index < packet.End)
-                                {
-                                    packet = new Packet()
-                                    {
-                                        Parent = packet.Parent,
-                                        LengthType = LengthType.Bits,
-                                        End = packet.End
-                                    };
-
-                                    packet.Parent.Packets.Add(packet);
-                                    bitsToRead = 3;
-                                }
-                                else
-                                {
-                                    var isFinished = true;
-                                    while (isFinished && packetStack.Any())
-                                    {
-                                        isFinished = true;
-                                        packet = packetStack.Pop();
-                                        if (packet.LengthType == LengthType.Bits && index < packet.End)
-                                        {
-                                            isFinished = false;
-                                        }
-                                        if (packet.LengthType == LengthType.Packets
-                                            && packet.Packets.Count < packet.End)
-                                        {
-                                            isFinished = false;
-                                        }
-                                    }
-
-                                    bitsToRead = isFinished ? 0 : 3;
-                                }
-
-                            }
-                            else if (packet.LengthType == LengthType.Packets)
-                            {
-                                if (packet.Parent.Packets.Count == packet.End)
-                                {
-                                    var isFinished = true;
-                                    while (isFinished && packetStack.Any())
-                                    {
-                                        isFinished = true;
-                                        packet = packetStack.Pop();
-                                        if (packet.LengthType == LengthType.Bits && index < packet.End)
-                                        {
-                                            isFinished = false;
-                                        }
-                                        if (packet.LengthType == LengthType.Packets
-                                            && packet.Packets.Count < packet.End)
-                                        {
-                                            isFinished = false;
-                                        }
-                                    }
-
-                                    bitsToRead = isFinished ? 0 : 3;
-                                }
-                                else if (packet.Parent.Packets.Count < packet.End)
-                                {
-                                    packet = new Packet()
-                                    {
-                                        Parent = packet.Parent,
-                                        LengthType = LengthType.Packets,
-                                        End = packet.End
-                                    };
-
-                                    packet.Parent.Packets.Add(packet);
-                                    bitsToRead = 3;
-                                }
-                            }
-                        }
-                        break;
-
-                    case SymbolType.OperatorLengthType:
-                        var operatorLengthType = new Symbol(SymbolType.OperatorLengthType, symbol);
-                        packet.Symbols.Add(operatorLengthType);
-
-                        switch(operatorLengthType.IntValue)
-                        {
-                            case 0:
-                                symbolType = SymbolType.TotalPacketLength;
-                                bitsToRead = 15;
-                                break;
-                            case 1:
-                                symbolType = SymbolType.SubPacketCount;
-                                bitsToRead = 11;
-                                break;
-                        }
-                        break;
-
-                    case SymbolType.TotalPacketLength:
-                        var totalPacketLength = new Symbol(SymbolType.TotalPacketLength, symbol);
-                        packet.Symbols.Add(totalPacketLength);
-
-                        //packet.LengthType = LengthType.Bits;
-                        //packet.End = index + totalPacketLength.IntValue;
-
-                        packetStack.Push(packet);
-                        packet = new Packet()
-                        {
-                            Parent = packet,
-                            LengthType = LengthType.Bits,
-                            End = index + totalPacketLength.IntValue
-                        };
-                        packet.Parent.Packets.Add(packet);
-
-                        symbolType = SymbolType.HeaderVersion;
-                        bitsToRead = 3;
-                        break;
-
-                    case SymbolType.SubPacketCount:
-                        var subPacketCount = new Symbol(SymbolType.SubPacketCount, symbol);
-                        packet.Symbols.Add(subPacketCount);
-
-                        //packet.LengthType = LengthType.Packets;
-                        //packet.End = subPacketCount.IntValue;
-
-                        packetStack.Push(packet);
-                        packet = new Packet()
-                        {
-                            Parent = packet,
-                            LengthType = LengthType.Packets,
-                            End = subPacketCount.IntValue
-                        };
-                        packet.Parent.Packets.Add(packet);
-
-                        symbolType = SymbolType.HeaderVersion;
-                        bitsToRead = 3;
-                        break;
-
-
-                }
-
-            }
-
-            var result = SumAllPacketVersions(headPacket);
+            var result = SumAllPacketVersions(packet);
 
             return result.ToString();
         }
 
         private int SumAllPacketVersions(Packet packet)
         {
-            var thisPacketVersion = packet.Symbols
-                .Where(s => s.Type == SymbolType.HeaderVersion)
-                .Sum(s => s.IntValue);
+            var thisPacketVersion = packet.HeaderVersion.IntValue;
 
             var children = packet.Packets.Sum(SumAllPacketVersions);
 
