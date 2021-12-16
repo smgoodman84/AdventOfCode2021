@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -8,8 +9,8 @@ namespace AdventOfCode2021.Day16
     public class Day16 : IDay
     {
         public int DayNumber => 16;
-        public string ValidatedPart1 => "";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart1 => "945";
+        public string ValidatedPart2 => "10637009915279";
 
         private string _hexTransmission;
 
@@ -30,7 +31,7 @@ namespace AdventOfCode2021.Day16
 
         private class Symbol
         {
-            public Symbol(SymbolType type, IEnumerable<int> value)
+            public Symbol(SymbolType type, IEnumerable<uint> value)
             {
                 Type = type;
                 RawValue = value.ToArray();
@@ -38,11 +39,11 @@ namespace AdventOfCode2021.Day16
             }
 
             public SymbolType Type { get; set; }
-            public int[] RawValue { get; set; }
-            public int IntValue { get; set; }
+            public uint[] RawValue { get; set; }
+            public ulong LongValue { get; set; }
             public List<Symbol> Children = new List<Symbol>();
 
-            public void AddBits(IEnumerable<int> newBits)
+            public void AddBits(IEnumerable<uint> newBits)
             {
                 RawValue = RawValue.Concat(newBits).ToArray();
                 ConvertToInt();
@@ -50,18 +51,18 @@ namespace AdventOfCode2021.Day16
 
             private void ConvertToInt()
             {
-                var result = 0;
+                ulong result = 0;
                 foreach (var i in RawValue)
                 {
                     result *= 2;
                     result += i;
                 }
-                IntValue = result;
+                LongValue = result;
             }
 
             public override string ToString()
             {
-                return $"{Type} {IntValue}";
+                return $"{Type} {LongValue}";
             }
         }
 
@@ -79,29 +80,64 @@ namespace AdventOfCode2021.Day16
             public Symbol OperatorLengthType { get; set; }
             public Symbol TotalPacketLength { get; set; }
             public Symbol SubPacketCount { get; set; }
-            /*
-            public Packet Parent { get; set; }
-            public LengthType LengthType { get; set; }
-            public int End { get; set; }
-            public List<Symbol> Symbols { get; set; } = new List<Symbol>();
-            */
             public List<Packet> Packets { get; set; } = new List<Packet>();
+
+            public ulong Evaluate()
+            {
+                switch(HeaderType.LongValue)
+                {
+                    case 0:
+                        ulong sum = 0;
+                        foreach (var p in Packets)
+                        {
+                            sum += p.Evaluate();
+                        }
+                        return sum;
+                    case 1:
+                        ulong product = 1;
+                        foreach(var p in Packets)
+                        {
+                            product *= p.Evaluate();
+                        }
+                        return product;
+                    case 2:
+                        return Packets.Min(p => p.Evaluate());
+                    case 3:
+                        return Packets.Max(p => p.Evaluate());
+                    case 4:
+                        return Literal.LongValue;
+                    case 5:
+                        var gta = Packets[0].Evaluate();
+                        var gtb = Packets[1].Evaluate();
+                        return gta > gtb ? 1ul : 0ul;
+                    case 6:
+                        var lta = Packets[0].Evaluate();
+                        var ltb = Packets[1].Evaluate();
+                        return lta < ltb ? 1ul : 0ul;
+                    case 7:
+                        var ea = Packets[0].Evaluate();
+                        var eb = Packets[1].Evaluate();
+                        return ea == eb ? 1ul : 0ul;
+                }
+
+                throw new Exception($"Unexpected HeaderType {HeaderType.LongValue}");
+            }
         }
 
         private class Parser
         {
-            private readonly int[] _binaryData;
+            private readonly uint[] _binaryData;
 
-            public Parser(int[] binaryData)
+            public Parser(uint[] binaryData)
             {
                 _binaryData = binaryData;
             }
 
-            private int _index = 0;
+            private ulong _index = 0;
             
-            private int[] ReadSymbolData(int bitsToRead)
+            private uint[] ReadSymbolData(int bitsToRead)
             {
-                var symbolData = new int[bitsToRead];
+                var symbolData = new uint[bitsToRead];
 
                 var symbolIndex = 0;
                 while (symbolIndex < bitsToRead)
@@ -130,7 +166,7 @@ namespace AdventOfCode2021.Day16
 
             private Symbol ReadLiteral()
             {
-                var literal = new Symbol(SymbolType.Literal, new int[0]);
+                var literal = new Symbol(SymbolType.Literal, new uint[0]);
 
                 var readMore = true;
                 while(readMore)
@@ -165,7 +201,7 @@ namespace AdventOfCode2021.Day16
                 return subPacketCount;
             }
 
-            private List<Packet> ReadPacketsForCount(int count)
+            private List<Packet> ReadPacketsForCount(ulong count)
             {
                 var packets = new List<Packet>();
 
@@ -178,7 +214,7 @@ namespace AdventOfCode2021.Day16
                 return packets;
             }
 
-            private List<Packet> ReadPacketsForLength(int count)
+            private List<Packet> ReadPacketsForLength(ulong count)
             {
                 var endIndex = _index + count;
                 var packets = new List<Packet>();
@@ -198,23 +234,22 @@ namespace AdventOfCode2021.Day16
                 packet.HeaderVersion = ReadHeaderVersion();
                 packet.HeaderType = ReadHeaderType();
 
-                if (packet.HeaderType.IntValue == 4)
+                if (packet.HeaderType.LongValue == 4)
                 {
-
                     packet.Literal = ReadLiteral();
                     return packet;
                 }
 
                 packet.OperatorLengthType = ReadOperatorTypeLength();
-                if (packet.OperatorLengthType.IntValue == 0)
+                if (packet.OperatorLengthType.LongValue == 0)
                 {
                     packet.TotalPacketLength = ReadTotalPacketLength();
-                    packet.Packets = ReadPacketsForLength(packet.TotalPacketLength.IntValue);
+                    packet.Packets = ReadPacketsForLength(packet.TotalPacketLength.LongValue);
                     return packet;
                 }
 
                 packet.SubPacketCount = ReadSubPacketCount();
-                packet.Packets = ReadPacketsForCount(packet.SubPacketCount.IntValue);
+                packet.Packets = ReadPacketsForCount(packet.SubPacketCount.LongValue);
                 return packet;
             }
 
@@ -238,48 +273,60 @@ namespace AdventOfCode2021.Day16
             return result.ToString();
         }
 
-        private int SumAllPacketVersions(Packet packet)
+        private ulong SumAllPacketVersions(Packet packet)
         {
-            var thisPacketVersion = packet.HeaderVersion.IntValue;
+            ulong sum = packet.HeaderVersion.LongValue;
+            foreach (var p in packet.Packets)
+            {
+                sum += SumAllPacketVersions(p);
+            }
 
-            var children = packet.Packets.Sum(SumAllPacketVersions);
-
-            return thisPacketVersion + children;
+            return sum;
         }
 
         public string Part2()
         {
-            return "";
+            var binaryData = ExpandHex(_hexTransmission).ToArray();
+
+            var parser = new Parser(binaryData);
+
+            var packet = parser.Parse();
+
+            var result = packet.Evaluate();
+
+            return result.ToString();
         }
 
 
-        private IEnumerable<int> ExpandHex(string hex)
+        private IEnumerable<uint> ExpandHex(string hex)
         {
             return hex.ToArray()
                 .SelectMany(ExpandHex);
         }
 
-        private static Dictionary<char, int[]> HexLookup = new Dictionary<char, int[]>
+
+
+        private static Dictionary<char, uint[]> HexLookup = new Dictionary<char, uint[]>
         {
-            { '0', new []{ 0, 0, 0, 0} },
-            { '1', new []{ 0, 0, 0, 1} },
-            { '2', new []{ 0, 0, 1, 0} },
-            { '3', new []{ 0, 0, 1, 1} },
-            { '4', new []{ 0, 1, 0, 0} },
-            { '5', new []{ 0, 1, 0, 1} },
-            { '6', new []{ 0, 1, 1, 0} },
-            { '7', new []{ 0, 1, 1, 1} },
-            { '8', new []{ 1, 0, 0, 0} },
-            { '9', new []{ 1, 0, 0, 1} },
-            { 'A', new []{ 1, 0, 1, 0} },
-            { 'B', new []{ 1, 0, 1, 1} },
-            { 'C', new []{ 1, 1, 0, 0} },
-            { 'D', new []{ 1, 1, 0, 1} },
-            { 'E', new []{ 1, 1, 1, 0} },
-            { 'F', new []{ 1, 1, 1, 1} },
+            { '0', new []{ 0u, 0u, 0u, 0u} },
+            { '1', new []{ 0u, 0u, 0u, 1u} },
+            { '2', new []{ 0u, 0u, 1u, 0u} },
+            { '3', new []{ 0u, 0u, 1u, 1u} },
+            { '4', new []{ 0u, 1u, 0u, 0u} },
+            { '5', new []{ 0u, 1u, 0u, 1u} },
+            { '6', new []{ 0u, 1u, 1u, 0u} },
+            { '7', new []{ 0u, 1u, 1u, 1u} },
+            { '8', new []{ 1u, 0u, 0u, 0u} },
+            { '9', new []{ 1u, 0u, 0u, 1u} },
+            { 'A', new []{ 1u, 0u, 1u, 0u} },
+            { 'B', new []{ 1u, 0u, 1u, 1u} },
+            { 'C', new []{ 1u, 1u, 0u, 0u} },
+            { 'D', new []{ 1u, 1u, 0u, 1u} },
+            { 'E', new []{ 1u, 1u, 1u, 0u} },
+            { 'F', new []{ 1u, 1u, 1u, 1u} },
         };
 
-        private IEnumerable<int> ExpandHex(char hex)
+        private IEnumerable<uint> ExpandHex(char hex)
         {
             return HexLookup[hex];
         }
