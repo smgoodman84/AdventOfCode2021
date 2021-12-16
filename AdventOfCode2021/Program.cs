@@ -9,7 +9,7 @@ namespace AdventOfCode2021
         static void Main(string[] args)
         {
             var days = new List<IDay>
-            {
+            {/*
                 new Day01.Day01(),
                 new Day02.Day02(),
                 new Day03.Day03(),
@@ -24,7 +24,8 @@ namespace AdventOfCode2021
                 new Day12.Day12(),
                 new Day13.Day13(),
                 new Day14.Day14(),
-                new Day15.Day15(),
+                new Day15.Day15(),*/
+                new Day16.Day16(),
             };
 
             var invalidCount = 0;
