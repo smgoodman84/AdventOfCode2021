@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -8,8 +7,8 @@ namespace AdventOfCode2021.Day17
     public class Day17 : IDay
     {
         public int DayNumber => 17;
-        public string ValidatedPart1 => "";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart1 => "15931";
+        public string ValidatedPart2 => "2555";
 
         private int _left;
         private int _right;
@@ -75,7 +74,7 @@ namespace AdventOfCode2021.Day17
 
         public string Part1()
         {
-            var yResults = Enumerable.Range(0, 5000)
+            var yResults = Enumerable.Range(0, 1000)
                 .Select(i => (i, GetResultForYVelocity(i)))
                 .ToList();
 
@@ -92,10 +91,46 @@ namespace AdventOfCode2021.Day17
             return maxHeight.ToString();
         }
 
+        public string Part2()
+        {
+            var yResults = Enumerable.Range(-1000, 2000)
+                .Select(i => (i, GetResultForYVelocity(i)))
+                .ToList();
+
+            var hits = yResults
+                .Where(x => x.Item2.HitResultType == HitResultType.Hit)
+                .ToList();
+
+            var total = 0;
+            foreach (var hit in hits)
+            {
+                var hitCountForY = 1;
+                var y = hit.Item2.InitialYVelocity;
+
+                var x = hit.Item2.InitialXVelocity - 1;
+                while (GetResult(x, y).HitResultType == HitResultType.Hit)
+                {
+                    hitCountForY += 1;
+                    x -= 1;
+                }
+
+                x = hit.Item2.InitialXVelocity + 1;
+                while (GetResult(x, y).HitResultType == HitResultType.Hit)
+                {
+                    hitCountForY += 1;
+                    x += 1;
+                }
+
+                total += hitCountForY;
+            }
+
+            return total.ToString();
+        }
+
 
         private HitResult GetResultForYVelocity(int yVelocity)
         {
-            var xVelocity = 10;
+            var xVelocity = 1;
             bool? increasing = null;
 
             while (true)
@@ -136,11 +171,6 @@ namespace AdventOfCode2021.Day17
             }
         }
 
-        public string Part2()
-        {
-            return "";
-        }
-
         private HitResult GetResult(int xVelocity, int yVelocity)
         {
             var state = new ProbeState
@@ -163,7 +193,9 @@ namespace AdventOfCode2021.Day17
             return new HitResult
             {
                 HitResultType = hitResult,
-                FinalState = state
+                FinalState = state,
+                InitialXVelocity = xVelocity,
+                InitialYVelocity = yVelocity
             };
         }
 
@@ -206,6 +238,13 @@ namespace AdventOfCode2021.Day17
         {
             public HitResultType HitResultType { get; set; }
             public ProbeState FinalState { get; set; }
+            public int InitialYVelocity { get; internal set; }
+            public int InitialXVelocity { get; internal set; }
+
+            public override string ToString()
+            {
+                return $"{InitialXVelocity},{InitialYVelocity} {HitResultType}";
+            }
         }
 
         private enum HitResultType
