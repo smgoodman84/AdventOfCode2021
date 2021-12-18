@@ -9,7 +9,7 @@ namespace AdventOfCode2021.Day18
     {
         public int DayNumber => 18;
         public string ValidatedPart1 => "3359";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart2 => "4616";
 
         private List<string> _lines;
 
@@ -35,7 +35,26 @@ namespace AdventOfCode2021.Day18
 
         public string Part2()
         {
-            return "";
+            var maxMagnitude = 0;
+
+            foreach (var line1 in _lines)
+            {
+                foreach (var line2 in _lines)
+                {
+                    var left = Parse(line1);
+                    var right = Parse(line2);
+
+                    var sum = Add(left, right);
+
+                    var magnitude = sum.GetMagnitude();
+                    if (magnitude > maxMagnitude)
+                    {
+                        maxMagnitude = magnitude;
+                    }
+                }
+            }
+
+            return maxMagnitude.ToString();
         }
 
         private IPair Add(IPair left, IPair right)
