@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -11,6 +12,7 @@ namespace AdventOfCode2021.Day19
         public string ValidatedPart2 => "";
 
         private List<Scanner> _scanners;
+        private Map _map;
 
         public Day19()
         {
@@ -38,19 +40,14 @@ namespace AdventOfCode2021.Day19
 
                 scanner.AddBeacon(new Coordinate(line));
             }
+
+            CreateMap();
         }
         
-        public string Part1()
+        public void CreateMap()
         {
-            /*
-            var allCoordinates = _scanners
-                .SelectMany(s => s.BeaconRotations.SelectMany(b => b.Value))
-                .Select(c => c.ToString())
-                .OrderBy(c => c)
-                .ToList();
-            */
-            var map = new Map();
-            map.InitialiseFromScanner(_scanners[0]);
+            _map = new Map();
+            _map.InitialiseFromScanner(_scanners[0]);
 
             var unmergedScanners = _scanners.Skip(1).ToList();
 
@@ -59,20 +56,23 @@ namespace AdventOfCode2021.Day19
                 var remaining = new List<Scanner>();
                 foreach (var scanner in unmergedScanners)
                 {
-                    if (!map.TryMerge(scanner))
+                    if (!_map.TryMerge(scanner))
                     {
                         remaining.Add(scanner);
                     }
                 }
                 unmergedScanners = remaining;
             }
+        }
 
-            return map.BeaconCount.ToString();
+        public string Part1()
+        {
+            return _map.BeaconCount.ToString();
         }
 
         public string Part2()
         {
-            return "";
+            return _map.GetLargestManhattenDistance().ToString();
         }
 
         private class Map
@@ -81,9 +81,11 @@ namespace AdventOfCode2021.Day19
 
             private List<Coordinate> _beaconCoordinates = new List<Coordinate>();
             private Dictionary<string, List<int>> _beaconLookup = new Dictionary<string, List<int>>();
+            private Dictionary<int, Coordinate> _scannerLocations = new Dictionary<int, Coordinate>();
 
             public void InitialiseFromScanner(Scanner scanner)
             {
+                _scannerLocations.Add(scanner.Id, new Coordinate(0, 0, 0));
                 AddBeacons(scanner.Beacons, scanner.Id);
             }
 
@@ -104,6 +106,28 @@ namespace AdventOfCode2021.Day19
                     _beaconCoordinates.Add(beacon);
                 }
                 _beaconLookup[key].Add(scannerId);
+            }
+
+            public int GetLargestManhattenDistance()
+            {
+                var max = 0;
+                foreach (var scanner1 in _scannerLocations.Keys)
+                {
+                    foreach (var scanner2 in _scannerLocations.Keys)
+                    {
+                        var distance = GetDistance(_scannerLocations[scanner1], _scannerLocations[scanner2]);
+                        if (distance > max)
+                        {
+                            max = distance;
+                        }
+                    }
+                }
+                return max;
+            }
+
+            private int GetDistance(Coordinate a, Coordinate b)
+            {
+                return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y) + Math.Abs(a.Z - b.Z);
             }
 
             public bool TryMerge(Scanner scanner)
@@ -135,6 +159,7 @@ namespace AdventOfCode2021.Day19
                                             matchCount[scannerId] += 1;
                                             if (matchCount[scannerId] >= 12)
                                             {
+                                                _scannerLocations.Add(scanner.Id, new Coordinate(transformX, transformY, transformZ));
                                                 AddBeacons(transformedCoordinates, scannerId);
                                                 return true;
                                             }
