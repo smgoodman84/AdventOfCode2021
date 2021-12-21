@@ -31,25 +31,22 @@ namespace AdventOfCode2021.Day21
         
         public string Part1()
         {
-            return "";/*
+            DiracDiceContext winningContext = null;
             var die = new DeterministicDie();
             var context = GetInitialContext(1000);
-            while (context.Winner == null)
-            {
-                var roll = die.Roll();
-                context = GetWinCount(context, roll, _ => { });
-                //Console.WriteLine(context);
-            }
+            var winCounts = GetWinCounts(context, die, new Cache(), x => winningContext = x);
 
-            var loser = context.Players[1 - context.Winner.Value];
-            var rolls = context.RollCount;
-            var result = rolls * loser.Score;
-            return result.ToString();*/
+            var loser = 1 - winningContext.Winner;
+            var rolls = winningContext.RollCount;
+            var result = rolls * winningContext.Players[loser.Value].Score;
+            return result.ToString();
         }
 
         public string Part2()
         {
-            var winCounts = GetWinCounts(GetInitialContext(21));
+            var die = new QuantumDie();
+            var context = GetInitialContext(21);
+            var winCounts = GetWinCounts(context, die, new Cache(), _ => { });
 
             var result = winCounts.Player1 > winCounts.Player2 ? winCounts.Player1 : winCounts.Player2;
 
@@ -82,16 +79,22 @@ namespace AdventOfCode2021.Day21
             };
         }
 
-        private WinCount GetWinCounts(DiracDiceContext currentContext)
+        private WinCount GetWinCounts(
+            DiracDiceContext currentContext,
+            IDie die,
+            Cache cache,
+            Action<DiracDiceContext> winningContextAction)
         {
-            var one = GetWinCount(currentContext, 1);
-            var two = GetWinCount(currentContext, 2);
-            var three = GetWinCount(currentContext, 3);
-            return new WinCount
+            var result = new WinCount();
+
+            foreach (var roll in die.GetNextRolls())
             {
-                Player1 = one.Player1 + two.Player1 + three.Player1,
-                Player2 = one.Player2 + two.Player2 + three.Player2,
-            };
+                var winCount = GetWinCount(currentContext, die, cache, winningContextAction, roll);
+                result.Player1 += winCount.Player1;
+                result.Player2 += winCount.Player2;
+            }
+
+            return result;
         }
 
         private class WinCount
@@ -99,28 +102,35 @@ namespace AdventOfCode2021.Day21
             public long Player1 { get; set; }
             public long Player2 { get; set; }
 
+            public static Dictionary<int, WinCount> SingleWinForPlayer => new Dictionary<int, WinCount>
+            {
+                { 0, new WinCount { Player1 = 1, Player2 = 0} },
+                { 1, new WinCount { Player1 = 0, Player2 = 1} }
+            };
+
             public override string ToString()
             {
                 return $"{Player1}, {Player2}";
             }
         }
 
-        private Dictionary<string, WinCount> _winCounts = new Dictionary<string, WinCount>();
-
-
-        private Dictionary<int, WinCount> _winCountForPlayer = new Dictionary<int, WinCount>
+        private class Cache
         {
-            { 0, new WinCount { Player1 = 1, Player2 = 0} },
-            { 1, new WinCount { Player1 = 0, Player2 = 1} }
-        };
+            public Dictionary<string, WinCount> WinCounts = new Dictionary<string, WinCount>();
+        }
 
-        private WinCount GetWinCount(DiracDiceContext initialContext, int roll)
+        private WinCount GetWinCount(
+            DiracDiceContext initialContext,
+            IDie die,
+            Cache cache,
+            Action<DiracDiceContext> winningContextAction,
+            int roll)
         {
             var key = $"{initialContext.Key}|{roll}";
 
-            if (_winCounts.ContainsKey(key))
+            if (cache.WinCounts.ContainsKey(key))
             {
-                return _winCounts[key];
+                return cache.WinCounts[key];
             }
 
             var resultingContext = new DiracDiceContext
@@ -170,31 +180,16 @@ namespace AdventOfCode2021.Day21
                 if (resultingContext.Players[playerThatMoved].Score >= resultingContext.WinningScore)
                 {
                     resultingContext.Winner = playerThatMoved;
-                    var winCountSingle = _winCountForPlayer[resultingContext.Winner.Value];
-                    _winCounts[key] = winCountSingle;
-                    if (initialContext.RollCount < 2)
-                    {
-                        Console.WriteLine($"Wincount Single {key}: {winCountSingle}");
-                        /*
-                        var ctx = resultingContext;
-                        while (ctx != null)
-                        {
-                            Console.WriteLine(ctx);
-                            ctx = ctx.PreviousContext;
-                        }
-                        */
-                    }
-                    return winCountSingle;
+                    winningContextAction(resultingContext);
+
+                    cache.WinCounts[key] = WinCount.SingleWinForPlayer[playerThatMoved];
+                    return cache.WinCounts[key];
                 }
             }
 
-            var winCountRecursive = GetWinCounts(resultingContext);
-            _winCounts[key] = winCountRecursive;
-            if (initialContext.RollCount < 2)
-            {
-                Console.WriteLine($"Wincount {key}: {winCountRecursive}");
-            }
-            return winCountRecursive;
+            var winCountRecursive = GetWinCounts(resultingContext, die, cache, winningContextAction);
+            cache.WinCounts[key] = winCountRecursive;
+            return cache.WinCounts[key];
         }
 
         private class PlayerContext
@@ -233,92 +228,23 @@ namespace AdventOfCode2021.Day21
             }
         }
 
-
-        private class DiracDice
+        private interface IDie
         {
-            public List<Player> Players = new List<Player>();
-            private Player _currentPlayer;
-            private DeterministicDie _die = new DeterministicDie();
-
-            public DiracDice(Dictionary<int, int> initialPositions)
-            {
-                Player previousPlayer = null;
-                Player firstPlayer = null;
-
-                foreach (var position in initialPositions)
-                {
-                    var player = new Player()
-                    {
-                        PlayerNumber = position.Key,
-                        Score = 0,
-                        Position = position.Value
-                    };
-                    Players.Add(player);
-
-                    if (firstPlayer == null)
-                    {
-                        firstPlayer = player;
-                        _currentPlayer = firstPlayer;
-                    }
-
-                    if (previousPlayer != null)
-                    {
-                        previousPlayer.NextPlayer = player;
-                    }
-
-                    previousPlayer = player;
-                }
-
-                previousPlayer.NextPlayer = firstPlayer;
-            }
-
-            public int Play()
-            {
-                while (true)
-                {
-                    var rollOne = _die.Roll();
-                    var rollTwo = _die.Roll();
-                    var rollThree = _die.Roll();
-                    var advanceBy = rollOne + rollTwo + rollThree;
-                    _currentPlayer.Position += advanceBy;
-                    if (_currentPlayer.Position > 10)
-                    {
-                        _currentPlayer.Position = _currentPlayer.Position % 10;
-                        if (_currentPlayer.Position == 0)
-                        {
-                            _currentPlayer.Position = 10;
-                        }
-                    }
-                    _currentPlayer.Score += _currentPlayer.Position;
-
-                    Console.WriteLine($"Player {_currentPlayer.PlayerNumber} Rolled {rollOne},{rollTwo},{rollThree}={advanceBy} Moved to {_currentPlayer.Position} Score {_currentPlayer.Score} RollCount {_die.RollCount}");
-
-                    if (_currentPlayer.Score >= 1000)
-                    {
-                        return _currentPlayer.PlayerNumber;
-                    }
-
-                    _currentPlayer = _currentPlayer.NextPlayer;
-                }
-            }
-
-            public int GetDieRolls() => _die.RollCount;
+            public IEnumerable<int> GetNextRolls();
         }
 
-        private class Player
+        private class QuantumDie : IDie
         {
-            public int PlayerNumber { get; set; }
-            public int Score { get; set; }
-            public int Position { get; set; }
-            public Player NextPlayer { get; set; }
+            private List<int> _rolls = new List<int> { 1, 2, 3 };
+            public IEnumerable<int> GetNextRolls() => _rolls;
         }
 
-        private class DeterministicDie
+        private class DeterministicDie : IDie
         {
             private int _lastValue = 100;
             public int RollCount { get; private set; } = 0;
 
-            public int Roll()
+            public IEnumerable<int> GetNextRolls()
             {
                 if (_lastValue == 100)
                 {
@@ -331,7 +257,7 @@ namespace AdventOfCode2021.Day21
 
                 RollCount += 1;
 
-                return _lastValue;
+                yield return _lastValue;
             }
         }
     }
