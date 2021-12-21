@@ -8,8 +8,8 @@ namespace AdventOfCode2021.Day20
     public class Day20 : IDay
     {
         public int DayNumber => 20;
-        public string ValidatedPart1 => "";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart1 => "5663";
+        public string ValidatedPart2 => "19638";
 
         private List<string> _lines;
         private int[] _algorithm;
@@ -25,29 +25,22 @@ namespace AdventOfCode2021.Day20
                 .Select(l => l.Select(ToBit).ToArray())
                 .ToArray();
         }
-        
-        public string Part1()
+
+        public string Part1() => GetLitPixelsForEnhancements(2).ToString();
+        public string Part2() => GetLitPixelsForEnhancements(50).ToString();
+
+        private int GetLitPixelsForEnhancements(int enhanceCount)
         {
             var image = new Image(_initialImage, 0);
-            Console.WriteLine();
-            Console.WriteLine(image);
 
-            var enhanceCount = 2;
             while (enhanceCount > 0)
             {
                 image = image.Enhance(_algorithm);
-                Console.WriteLine();
-                Console.WriteLine(image);
                 enhanceCount--;
             }
 
             var result = image.CountLitPixels();
-            return result.ToString();
-        }
-
-        public string Part2()
-        {
-            return "";
+            return result;
         }
 
         private int ToBit(char c)
