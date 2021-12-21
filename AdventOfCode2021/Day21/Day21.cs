@@ -10,7 +10,7 @@ namespace AdventOfCode2021.Day21
     {
         public int DayNumber => 21;
         public string ValidatedPart1 => "802452";
-        public string ValidatedPart2 => "";
+        public string ValidatedPart2 => "270005289024391";
 
         private List<string> _lines;
         private Dictionary<int, int> _startingPositions = new Dictionary<int, int>();
@@ -31,40 +31,25 @@ namespace AdventOfCode2021.Day21
         
         public string Part1()
         {
+            return "";/*
             var die = new DeterministicDie();
             var context = GetInitialContext(1000);
             while (context.Winner == null)
             {
                 var roll = die.Roll();
-                context = GetIteration(context, roll, _ => { });
+                context = GetWinCount(context, roll, _ => { });
                 //Console.WriteLine(context);
             }
 
             var loser = context.Players[1 - context.Winner.Value];
             var rolls = context.RollCount;
             var result = rolls * loser.Score;
-            return result.ToString();
+            return result.ToString();*/
         }
 
         public string Part2()
         {
-            IEnumerable<DiracDiceContext> incompleteGames = new List<DiracDiceContext>
-            {
-                GetInitialContext(21)
-            };
-
-            var winCounts = new WinCount
-            {
-                Player1 = 0,
-                Player2 = 0
-            };
-
-            while (incompleteGames.Any())
-            {
-                incompleteGames = incompleteGames
-                    .SelectMany(c => GetIterations(c, x => { winCounts.Player1 += x.Player1; winCounts.Player2 += x.Player2; }))
-                    .Where(c => c.Winner == null);
-            }
+            var winCounts = GetWinCounts(GetInitialContext(21));
 
             var result = winCounts.Player1 > winCounts.Player2 ? winCounts.Player1 : winCounts.Player2;
 
@@ -97,17 +82,27 @@ namespace AdventOfCode2021.Day21
             };
         }
 
-        private IEnumerable<DiracDiceContext> GetIterations(DiracDiceContext currentContext, Action<WinCount> winAction)
+        private WinCount GetWinCounts(DiracDiceContext currentContext)
         {
-            yield return GetIteration(currentContext, 1, winAction);
-            yield return GetIteration(currentContext, 2, winAction);
-            yield return GetIteration(currentContext, 3, winAction);
+            var one = GetWinCount(currentContext, 1);
+            var two = GetWinCount(currentContext, 2);
+            var three = GetWinCount(currentContext, 3);
+            return new WinCount
+            {
+                Player1 = one.Player1 + two.Player1 + three.Player1,
+                Player2 = one.Player2 + two.Player2 + three.Player2,
+            };
         }
 
         private class WinCount
         {
             public long Player1 { get; set; }
             public long Player2 { get; set; }
+
+            public override string ToString()
+            {
+                return $"{Player1}, {Player2}";
+            }
         }
 
         private Dictionary<string, WinCount> _winCounts = new Dictionary<string, WinCount>();
@@ -116,37 +111,43 @@ namespace AdventOfCode2021.Day21
         private Dictionary<int, WinCount> _winCountForPlayer = new Dictionary<int, WinCount>
         {
             { 0, new WinCount { Player1 = 1, Player2 = 0} },
-            { 0, new WinCount { Player1 = 0, Player2 = 1} }
+            { 1, new WinCount { Player1 = 0, Player2 = 1} }
         };
 
-        private DiracDiceContext GetIteration(DiracDiceContext currentContext, int roll, Action<WinCount> winAction)
+        private WinCount GetWinCount(DiracDiceContext initialContext, int roll)
         {
+            var key = $"{initialContext.Key}|{roll}";
 
-
-            var context = new DiracDiceContext
+            if (_winCounts.ContainsKey(key))
             {
+                return _winCounts[key];
+            }
+
+            var resultingContext = new DiracDiceContext
+            {
+                PreviousContext = initialContext,
                 Players = new PlayerContext[2]
                 {
                     new PlayerContext
                     {
-                        CurrentRollCount = currentContext.Players[0].CurrentRollCount,
-                        Position = currentContext.Players[0].Position,
-                        Score = currentContext.Players[0].Score
+                        CurrentRollCount = initialContext.Players[0].CurrentRollCount,
+                        Position = initialContext.Players[0].Position,
+                        Score = initialContext.Players[0].Score
                     },
                     new PlayerContext
                     {
-                        CurrentRollCount = currentContext.Players[1].CurrentRollCount,
-                        Position = currentContext.Players[1].Position,
-                        Score = currentContext.Players[1].Score
+                        CurrentRollCount = initialContext.Players[1].CurrentRollCount,
+                        Position = initialContext.Players[1].Position,
+                        Score = initialContext.Players[1].Score
                     }
                 },
-                WinningScore = currentContext.WinningScore,
-                CurrentPlayerToMove = currentContext.CurrentPlayerToMove,
-                RollCount = currentContext.RollCount,
-                Winner = currentContext.Winner
+                WinningScore = initialContext.WinningScore,
+                CurrentPlayerToMove = initialContext.CurrentPlayerToMove,
+                RollCount = initialContext.RollCount,
+                Winner = initialContext.Winner
             };
 
-            var position = context.Players[context.CurrentPlayerToMove].Position + roll;
+            var position = resultingContext.Players[resultingContext.CurrentPlayerToMove].Position + roll;
             if (position > 10)
             {
                 position = position % 10;
@@ -155,25 +156,45 @@ namespace AdventOfCode2021.Day21
                     position = 10;
                 }
             }
-            context.Players[context.CurrentPlayerToMove].Position = position;
+            resultingContext.Players[resultingContext.CurrentPlayerToMove].Position = position;
 
-            context.Players[context.CurrentPlayerToMove].CurrentRollCount += 1;
-            context.RollCount += 1;
-            if (context.Players[context.CurrentPlayerToMove].CurrentRollCount == 3)
+            resultingContext.Players[resultingContext.CurrentPlayerToMove].CurrentRollCount += 1;
+            resultingContext.RollCount += 1;
+            if (resultingContext.Players[resultingContext.CurrentPlayerToMove].CurrentRollCount == 3)
             {
-                context.Players[context.CurrentPlayerToMove].CurrentRollCount = 0;
-                context.Players[context.CurrentPlayerToMove].Score += position;
-                if (context.Players[context.CurrentPlayerToMove].Score >= context.WinningScore)
-                {
-                    context.Winner = context.CurrentPlayerToMove;
-                    winAction(_winCountForPlayer[context.Winner.Value]);
-                }
+                var playerThatMoved = resultingContext.CurrentPlayerToMove;
+                resultingContext.Players[resultingContext.CurrentPlayerToMove].Score += position;
+                resultingContext.CurrentPlayerToMove = 1 - resultingContext.CurrentPlayerToMove;
+                resultingContext.Players[resultingContext.CurrentPlayerToMove].CurrentRollCount = 0;
 
-                context.CurrentPlayerToMove = 1 - context.CurrentPlayerToMove;
+                if (resultingContext.Players[playerThatMoved].Score >= resultingContext.WinningScore)
+                {
+                    resultingContext.Winner = playerThatMoved;
+                    var winCountSingle = _winCountForPlayer[resultingContext.Winner.Value];
+                    _winCounts[key] = winCountSingle;
+                    if (initialContext.RollCount < 2)
+                    {
+                        Console.WriteLine($"Wincount Single {key}: {winCountSingle}");
+                        /*
+                        var ctx = resultingContext;
+                        while (ctx != null)
+                        {
+                            Console.WriteLine(ctx);
+                            ctx = ctx.PreviousContext;
+                        }
+                        */
+                    }
+                    return winCountSingle;
+                }
             }
 
-
-            return context;
+            var winCountRecursive = GetWinCounts(resultingContext);
+            _winCounts[key] = winCountRecursive;
+            if (initialContext.RollCount < 2)
+            {
+                Console.WriteLine($"Wincount {key}: {winCountRecursive}");
+            }
+            return winCountRecursive;
         }
 
         private class PlayerContext
@@ -192,6 +213,8 @@ namespace AdventOfCode2021.Day21
 
         private class DiracDiceContext
         {
+            public DiracDiceContext PreviousContext { get; set; }
+
             public PlayerContext[] Players { get; set; }
 
             public int WinningScore { get; set; }
